@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sun, Moon, PenTool, Eraser, Trash2, Download, RefreshCw, CheckCircle2, Plus, Eye, EyeOff, Image as ImageIcon, Move, Crosshair, Square, Type, ChevronLeft, ChevronRight, X, Pen } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
+import { SKETCH_ANALYSIS, PLAN_IMAGE_GEN, SKETCH_ANALYSIS_FALLBACK, PLAN_IMAGE_GEN_FALLBACK } from './constants';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -795,10 +796,55 @@ User Architectural Logic (Structural Driver): ${textPrompt || 'Standard modern l
         });
       }
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: { parts }
-      });
+      // --- Step 1: Sketch Analysis ---
+      setCurrentStep(0); // Zoning Analysis & Axis Alignment
+      const analysisPrompt = `Analyze the provided architectural sketch and text prompt. 
+Extract structural logic, zoning, boundaries, and flow requirements as defined in the following system prompt:
+${finalPrompt}
+Return only the structural analysis and rectified logic for generation.`;
+
+      let analysisResponse;
+      try {
+        analysisResponse = await ai.models.generateContent({
+          model: SKETCH_ANALYSIS,
+          contents: { parts: [{ text: analysisPrompt }, { inlineData: { data: base64Image, mimeType: 'image/jpeg' } }] }
+        });
+      } catch (error) {
+        console.warn('Sketch Analysis Primary model failed, trying fallback:', error);
+        analysisResponse = await ai.models.generateContent({
+          model: SKETCH_ANALYSIS_FALLBACK,
+          contents: { parts: [{ text: analysisPrompt }, { inlineData: { data: base64Image, mimeType: 'image/jpeg' } }] }
+        });
+      }
+
+      const structuralDriverRes = analysisResponse.candidates?.[0]?.content?.parts?.[0]?.text || "Standard modern layout";
+      console.log("Analysis Result:", structuralDriverRes);
+
+      // --- Step 2: Plan Image Generation ---
+      setCurrentStep(3); // Boundary Extraction, Material Layering, Flow & Routing
+      const generationPrompt = `${finalPrompt}
+Based on the following structural analysis:
+${structuralDriverRes}
+Generate a professional, minimalist, black and white 2D top-down CAD floor plan.`;
+
+      const generationParts: any[] = [
+        { text: generationPrompt },
+        { inlineData: { data: base64Image, mimeType: 'image/jpeg' } }
+      ];
+
+      let response;
+      try {
+        response = await ai.models.generateContent({
+          model: PLAN_IMAGE_GEN,
+          contents: { parts: generationParts }
+        });
+      } catch (error) {
+        console.warn('Plan Generation Primary model failed, trying fallback:', error);
+        response = await ai.models.generateContent({
+          model: PLAN_IMAGE_GEN_FALLBACK,
+          contents: { parts: generationParts }
+        });
+      }
 
       let generatedImgUrl = null;
       for (const part of response.candidates?.[0]?.content?.parts || []) {
