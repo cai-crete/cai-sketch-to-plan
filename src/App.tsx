@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sun, Moon, PenTool, Eraser, Trash2, Download, RefreshCw, CheckCircle2, Plus, Eye, EyeOff, Image as ImageIcon, Move, Crosshair, Square, Type, ChevronLeft, ChevronRight, X, Pen, Undo2 } from 'lucide-react';
+import { Sun, Moon, PenTool, Eraser, Trash2, Download, RefreshCw, CheckCircle2, Plus, Eye, EyeOff, Image as ImageIcon, Move, Crosshair, Square, Type, ChevronLeft, ChevronRight, X, Pen, Undo2, Check } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
 import { SKETCH_ANALYSIS, PLAN_IMAGE_GEN, SKETCH_ANALYSIS_FALLBACK, PLAN_IMAGE_GEN_FALLBACK } from './constants';
 
@@ -145,6 +145,7 @@ export default function App() {
   const [drawMode, setDrawMode] = useState<'pen' | 'eraser' | 'move' | 'origin' | 'rectangle' | 'text'>('pen');
   const [origins, setOrigins] = useState<{x: number, y: number}[]>([]);
   const [textInput, setTextInput] = useState<{x: number, y: number, value: string} | null>(null);
+  const [eraserPos, setEraserPos] = useState<{x: number, y: number} | null>(null);
   const [history, setHistory] = useState<any[]>([]);
   
   const rectStartRef = useRef<{x: number, y: number} | null>(null);
@@ -305,6 +306,8 @@ export default function App() {
 
     ctx.beginPath();
     ctx.moveTo(x, y);
+    ctx.lineTo(x, y); // Draw single point immediately to prevent straight line artifact
+    ctx.stroke();
     setIsDrawing(true);
   };
 
@@ -368,6 +371,25 @@ export default function App() {
     if (drawMode === 'eraser') {
       ctx.globalCompositeOperation = 'destination-out';
       ctx.lineWidth = 20;
+      
+      // Efficiently delete shapes that the eraser touches
+      const currentLayer = layers.find(l => l.id === selectedLayerId);
+      if (currentLayer && currentLayer.shapes && currentLayer.shapes.length > 0) {
+        const remainingShapes = currentLayer.shapes.filter(shape => {
+          // simple collision check: if eraser point (x,y) is inside shape rectangle
+          const isInside = (
+            x >= shape.x && 
+            x <= shape.x + shape.width && 
+            y >= shape.y && 
+            y <= shape.y + shape.height
+          );
+          return !isInside;
+        });
+        
+        if (remainingShapes.length !== currentLayer.shapes.length) {
+          setLayers(layers.map(l => l.id === selectedLayerId ? { ...l, shapes: remainingShapes } : l));
+        }
+      }
     } else {
       ctx.globalCompositeOperation = 'source-over';
       ctx.strokeStyle = '#000000';
@@ -426,6 +448,7 @@ export default function App() {
     
     // Also clear shapes and uploaded image for this layer
     setLayers(layers.map(l => l.id === selectedLayerId ? { ...l, image: null, shapes: [] } : l));
+    setEraserPos(null);
   };
 
   // Layer System Handlers
@@ -1047,10 +1070,22 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
               <button onClick={clearCurrentLayer} className="p-2 w-full flex items-center justify-center h-[34px] hover:bg-red-500 hover:text-bw-white transition-colors border-t border-bw-black dark:border-bw-white text-red-500" title="Clear Layer">
                 <Trash2 size={16} />
               </button>
+              {drawMode === 'eraser' && (
+                <div className="flex-1 opacity-50 flex flex-col items-center justify-center text-[10px] font-bold py-2 border-t border-bw-black dark:border-bw-white">
+                  <span>ERASER</span>
+                  <span>MODE</span>
+                </div>
+              )}
             </div>
 
             {activeTab === 'create' ? (
-              <div id="canvas-container" className="absolute inset-0 overflow-hidden bg-bw-white dark:bg-bw-black select-none touch-none">
+              <div 
+                id="canvas-container" 
+                className="absolute inset-0 overflow-hidden bg-bw-white dark:bg-bw-black select-none touch-none"
+                onPointerLeave={() => setEraserPos(null)}
+                onContextMenu={(e) => e.preventDefault()}
+                onSelectStart={(e) => e.preventDefault()}
+              >
                 <div className="w-full h-full relative dark:invert">
                   {[...layers].reverse().map((layer, idx) => {
                     return (
@@ -1102,6 +1137,19 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
                     );
                   })}
                 </div>
+
+                {drawMode === 'eraser' && eraserPos && (
+                  <div 
+                    className="absolute pointer-events-none rounded-full border-2 border-red-500 z-[100] transition-none"
+                    style={{
+                      left: eraserPos.x,
+                      top: eraserPos.y,
+                      width: 20,
+                      height: 20,
+                      transform: 'translate(-50%, -50%)',
+                    }}
+                  />
+                )}
 
                 {origins.map((origin, idx) => (
                   <div 
@@ -1451,7 +1499,10 @@ const ShapeRenderer = ({
     if (tempShape) {
       updateShapeRef.current(shape.id, tempShape);
       setTempShape(null);
+      setIsSelected(false); // Move functionality deactivation
       if (onConfirm) onConfirm();
+    } else {
+      setIsSelected(false);
     }
   };
 
@@ -1495,21 +1546,14 @@ const ShapeRenderer = ({
           <div className="absolute top-0 left-0 w-3 h-full -ml-1.5 cursor-ew-resize" onPointerDown={(e) => handlePointerDown(e, 'left')} />
           <div className="absolute top-0 right-0 w-3 h-full -mr-1.5 cursor-ew-resize" onPointerDown={(e) => handlePointerDown(e, 'right')} />
           
-          {/* Action Buttons: Bottom Center INSIDE the shape at the bottom */}
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex z-[60] shape-action-btn border border-bw-black bg-bw-white">
-            <button 
-              onClick={(e) => { e.stopPropagation(); cancelChange(); }}
-              className="w-8 h-8 flex items-center justify-center hover:bg-bw-black/10 transition-colors border-r border-bw-black"
-              title="Cancel"
-            >
-              <X size={16} />
-            </button>
+          {/* Action Buttons: 2pt Padding below the bottom line */}
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[calc(100%+2px)] flex z-[60] shape-action-btn">
             <button 
               onClick={(e) => { e.stopPropagation(); confirmChange(); }}
-              className="w-8 h-8 flex items-center justify-center hover:bg-bw-black/10 transition-colors"
+              className="flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
               title="Confirm"
             >
-              <CheckCircle2 size={16} />
+              <Check size={24} className="text-blue-500 stroke-[3]" />
             </button>
           </div>
         </>
