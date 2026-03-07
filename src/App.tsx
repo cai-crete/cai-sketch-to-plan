@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sun, Moon, PenTool, Eraser, Trash2, Download, RefreshCw, CheckCircle2, Plus, Eye, EyeOff, Image as ImageIcon, Move, Crosshair, Square, Type, ChevronLeft, ChevronRight, X, Pen } from 'lucide-react';
+import { Sun, Moon, PenTool, Eraser, Trash2, Download, RefreshCw, CheckCircle2, Plus, Eye, EyeOff, Image as ImageIcon, Move, Crosshair, Square, Type, ChevronLeft, ChevronRight, X, Pen, Undo2 } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
 import { SKETCH_ANALYSIS, PLAN_IMAGE_GEN, SKETCH_ANALYSIS_FALLBACK, PLAN_IMAGE_GEN_FALLBACK } from './constants';
 
@@ -145,6 +145,7 @@ export default function App() {
   const [drawMode, setDrawMode] = useState<'pen' | 'eraser' | 'move' | 'origin' | 'rectangle' | 'text'>('pen');
   const [origins, setOrigins] = useState<{x: number, y: number}[]>([]);
   const [textInput, setTextInput] = useState<{x: number, y: number, value: string} | null>(null);
+  const [history, setHistory] = useState<any[]>([]);
   
   const rectStartRef = useRef<{x: number, y: number} | null>(null);
   const rectEndRef = useRef<{x: number, y: number} | null>(null);
@@ -174,18 +175,25 @@ export default function App() {
         if (layer.isGrid) return;
         const canvas = document.getElementById(`canvas-${layer.id}`) as HTMLCanvasElement;
         if (canvas) {
-          if (canvas.width !== container.clientWidth || canvas.height !== container.clientHeight) {
-            const ctx = canvas.getContext('2d');
-            let oldData = null;
-            if (canvas.width > 0 && canvas.height > 0 && ctx) {
-               oldData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const containerWidth = container.clientWidth;
+          const containerHeight = container.clientHeight;
+          
+          if (canvas.width !== containerWidth || canvas.height !== containerHeight) {
+            // Create a temporary canvas to hold the current content
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            if (tempCtx) {
+              tempCtx.drawImage(canvas, 0, 0);
             }
+
+            canvas.width = containerWidth;
+            canvas.height = containerHeight;
             
-            canvas.width = container.clientWidth;
-            canvas.height = container.clientHeight;
-            
-            if (oldData && ctx) {
-              ctx.putImageData(oldData, 0, 0);
+            const ctx = canvas.getContext('2d');
+            if (ctx && tempCtx) {
+              ctx.drawImage(tempCanvas, 0, 0);
             }
           }
         }
@@ -227,7 +235,51 @@ export default function App() {
     });
   };
 
+  // Undo Logic
+  const saveToHistory = () => {
+    const currentState = {
+      layers: JSON.parse(JSON.stringify(layers)),
+      origins: [...origins],
+      canvasData: layers.map(layer => {
+        if (layer.isGrid) return null;
+        const canvas = document.getElementById(`canvas-${layer.id}`) as HTMLCanvasElement;
+        return canvas ? canvas.toDataURL() : null;
+      })
+    };
+    setHistory(prev => [currentState, ...prev].slice(0, 50)); // Keep last 50 steps
+  };
+
+  const handleUndo = () => {
+    if (history.length === 0) return;
+    const prevState = history[0];
+    setHistory(prev => prev.slice(1));
+
+    setLayers(prevState.layers);
+    setOrigins(prevState.origins);
+
+    // Restore canvas contents
+    prevState.layers.forEach((layer: Layer, index: number) => {
+      if (layer.isGrid) return;
+      const dataUrl = prevState.canvasData[index];
+      if (dataUrl) {
+        const canvas = document.getElementById(`canvas-${layer.id}`) as HTMLCanvasElement;
+        const ctx = canvas?.getContext('2d');
+        if (ctx) {
+          const img = new Image();
+          img.src = dataUrl;
+          img.onload = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+          };
+        }
+      }
+    });
+  };
+
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if ('cancelable' in e && e.cancelable) e.preventDefault();
+    
+    saveToHistory();
     const canvas = e.target as HTMLCanvasElement;
     const rect = canvas.getBoundingClientRect();
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
@@ -244,6 +296,7 @@ export default function App() {
     }
 
     if (drawMode === 'origin') {
+      saveToHistory(); // Added history save for origin
       const gridSize = 45;
       const snappedX = Math.round(x / gridSize) * gridSize;
       const snappedY = Math.round(y / gridSize) * gridSize;
@@ -290,6 +343,7 @@ export default function App() {
   };
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.cancelable) e.preventDefault();
     if (!isDrawing) return;
     const canvas = e.target as HTMLCanvasElement;
     const ctx = canvas.getContext('2d');
@@ -381,6 +435,7 @@ export default function App() {
   };
 
   const clearCurrentLayer = () => {
+    saveToHistory();
     const canvas = document.getElementById(`canvas-${selectedLayerId}`) as HTMLCanvasElement;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -399,6 +454,7 @@ export default function App() {
   };
 
   const addLayer = () => {
+    saveToHistory();
     const newLayer: Layer = {
       id: `layer-${Date.now()}`,
       name: `Layer ${layers.length + 1}`,
@@ -412,6 +468,7 @@ export default function App() {
   };
 
   const removeLayer = (id: string) => {
+    saveToHistory();
     const newLayers = layers.filter(layer => layer.id !== id);
     setLayers(newLayers);
     if (selectedLayerId === id && newLayers.length > 0) {
@@ -990,11 +1047,11 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
               <button onClick={() => setDrawMode('eraser')} className={`p-2 w-full flex items-center justify-center h-[34px] hover:bg-bw-black/10 dark:hover:bg-bw-white/10 transition-colors border-t border-bw-black dark:border-bw-white ${drawMode === 'eraser' ? 'bg-bw-black/10 dark:bg-bw-white/10' : ''}`} title="Eraser">
                 <Eraser size={16} />
               </button>
-              <button onClick={() => setDrawMode('move')} className={`p-2 w-full flex items-center justify-center h-[34px] hover:bg-bw-black/10 dark:hover:bg-bw-white/10 transition-colors border-t border-bw-black dark:border-bw-white ${drawMode === 'move' ? 'bg-bw-black/10 dark:bg-bw-white/10' : ''}`} title="Move">
-                <Move size={16} />
-              </button>
               <button onClick={() => setDrawMode('rectangle')} className={`p-2 w-full flex items-center justify-center h-[34px] hover:bg-bw-black/10 dark:hover:bg-bw-white/10 transition-colors border-t border-bw-black dark:border-bw-white ${drawMode === 'rectangle' ? 'bg-bw-black/10 dark:bg-bw-white/10' : ''}`} title="Rectangle">
                 <Square size={16} />
+              </button>
+              <button onClick={() => setDrawMode('move')} className={`p-2 w-full flex items-center justify-center h-[34px] hover:bg-bw-black/10 dark:hover:bg-bw-white/10 transition-colors border-t border-bw-black dark:border-bw-white ${drawMode === 'move' ? 'bg-bw-black/10 dark:bg-bw-white/10' : ''}`} title="Move">
+                <Move size={16} />
               </button>
               <button onClick={() => setDrawMode('text')} className={`p-2 w-full flex items-center justify-center h-[34px] hover:bg-bw-black/10 dark:hover:bg-bw-white/10 transition-colors border-t border-bw-black dark:border-bw-white ${drawMode === 'text' ? 'bg-bw-black/10 dark:bg-bw-white/10' : ''}`} title="Text">
                 <Type size={16} />
@@ -1002,13 +1059,16 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
               <button onClick={() => setDrawMode('origin')} className={`p-2 w-full flex items-center justify-center h-[34px] hover:bg-bw-black/10 dark:hover:bg-bw-white/10 transition-colors border-t border-bw-black dark:border-bw-white ${drawMode === 'origin' ? 'bg-bw-black/10 dark:bg-bw-white/10' : ''}`} title="Set Origin">
                 <Crosshair size={16} />
               </button>
+              <button onClick={handleUndo} disabled={history.length === 0} className={`p-2 w-full flex items-center justify-center h-[34px] hover:bg-bw-black/10 dark:hover:bg-bw-white/10 transition-colors border-t border-bw-black dark:border-bw-white disabled:opacity-30`} title="Undo">
+                <Undo2 size={16} />
+              </button>
               <button onClick={clearCurrentLayer} className="p-2 w-full flex items-center justify-center h-[34px] hover:bg-red-500 hover:text-bw-white transition-colors border-t border-bw-black dark:border-bw-white text-red-500" title="Clear Layer">
                 <Trash2 size={16} />
               </button>
             </div>
 
             {activeTab === 'create' ? (
-              <div id="canvas-container" className="absolute inset-0 overflow-hidden bg-bw-white dark:bg-bw-black">
+              <div id="canvas-container" className="absolute inset-0 overflow-hidden bg-bw-white dark:bg-bw-black select-none">
                 <div className="w-full h-full relative dark:invert">
                   {[...layers].reverse().map((layer, idx) => {
                     return (
@@ -1282,6 +1342,7 @@ const ShapeRenderer = ({
   shape: Shape;
   isActive: boolean;
   updateShape: (id: string, shape: Shape) => void;
+  key?: string | number;
 }) => {
   const [isSelected, setIsSelected] = useState(false);
   const interactionRef = useRef({
