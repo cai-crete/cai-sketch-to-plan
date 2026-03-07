@@ -178,8 +178,10 @@ export default function App() {
           const containerWidth = container.clientWidth;
           const containerHeight = container.clientHeight;
           
+          if (containerWidth === 0 || containerHeight === 0) return;
+
           if (canvas.width !== containerWidth || canvas.height !== containerHeight) {
-            // Create a temporary canvas to hold the current content
+            // Create a temporary canvas to hold the current content before resizing
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = canvas.width;
             tempCanvas.height = canvas.height;
@@ -193,7 +195,12 @@ export default function App() {
             
             const ctx = canvas.getContext('2d');
             if (ctx && tempCtx) {
+              // Restore at top-left
               ctx.drawImage(tempCanvas, 0, 0);
+              // Ensure drawing settings are preserved
+              ctx.lineCap = 'round';
+              ctx.lineWidth = 2;
+              ctx.strokeStyle = '#000000';
             }
           }
         }
@@ -202,7 +209,8 @@ export default function App() {
 
     const resizeObserver = new ResizeObserver(() => {
       clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(handleResize, 350); // Wait for animation to finish
+      // Small delay to ensure container has settled
+      resizeTimeout = setTimeout(handleResize, 50);
     });
 
     resizeObserver.observe(container);
@@ -442,8 +450,8 @@ export default function App() {
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Also clear uploaded image for this layer
-    setLayers(layers.map(l => l.id === selectedLayerId ? { ...l, image: null } : l));
+    // Also clear shapes and uploaded image for this layer
+    setLayers(layers.map(l => l.id === selectedLayerId ? { ...l, image: null, shapes: [] } : l));
   };
 
   // Layer System Handlers
@@ -1059,7 +1067,7 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
               <button onClick={() => setDrawMode('origin')} className={`p-2 w-full flex items-center justify-center h-[34px] hover:bg-bw-black/10 dark:hover:bg-bw-white/10 transition-colors border-t border-bw-black dark:border-bw-white ${drawMode === 'origin' ? 'bg-bw-black/10 dark:bg-bw-white/10' : ''}`} title="Set Origin">
                 <Crosshair size={16} />
               </button>
-              <button onClick={handleUndo} disabled={history.length === 0} className={`p-2 w-full flex items-center justify-center h-[34px] hover:bg-bw-black/10 dark:hover:bg-bw-white/10 transition-colors border-t border-bw-black dark:border-bw-white disabled:opacity-30`} title="Undo">
+              <button onClick={handleUndo} className={`p-2 w-full flex items-center justify-center h-[34px] hover:bg-bw-black/10 dark:hover:bg-bw-white/10 transition-colors border-t border-bw-black dark:border-bw-white`} title="Undo">
                 <Undo2 size={16} />
               </button>
               <button onClick={clearCurrentLayer} className="p-2 w-full flex items-center justify-center h-[34px] hover:bg-red-500 hover:text-bw-white transition-colors border-t border-bw-black dark:border-bw-white text-red-500" title="Clear Layer">
@@ -1068,7 +1076,7 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
             </div>
 
             {activeTab === 'create' ? (
-              <div id="canvas-container" className="absolute inset-0 overflow-hidden bg-bw-white dark:bg-bw-black select-none">
+              <div id="canvas-container" className="absolute inset-0 overflow-hidden bg-bw-white dark:bg-bw-black select-none touch-none">
                 <div className="w-full h-full relative dark:invert">
                   {[...layers].reverse().map((layer, idx) => {
                     return (
@@ -1337,14 +1345,19 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
 const ShapeRenderer = ({
   shape,
   isActive,
-  updateShape
+  updateShape,
+  onCancel,
+  onConfirm
 }: {
   shape: Shape;
   isActive: boolean;
   updateShape: (id: string, shape: Shape) => void;
+  onCancel?: () => void;
+  onConfirm?: () => void;
   key?: string | number;
 }) => {
   const [isSelected, setIsSelected] = useState(false);
+  const [tempShape, setTempShape] = useState<Shape | null>(null);
   const interactionRef = useRef({
     type: 'none',
     startX: 0, startY: 0,
@@ -1352,26 +1365,39 @@ const ShapeRenderer = ({
     initWidth: 0, initHeight: 0
   });
 
+  const displayShape = tempShape || shape;
+
   useEffect(() => {
-    if (!isActive) setIsSelected(false);
+    if (!isActive) {
+      setIsSelected(false);
+      setTempShape(null);
+    }
   }, [isActive]);
 
   const handlePointerDown = (e: React.PointerEvent, type: string) => {
     if (!isActive) return;
     e.stopPropagation();
     
+    // Prevent default scrolling on touch
+    if (e.pointerType === 'touch') {
+      (e.target as HTMLElement).style.touchAction = 'none';
+    }
+    
     if (type === 'body') {
       setIsSelected(true);
+      if (!tempShape) setTempShape({ ...shape });
     }
+    
+    const currentInit = tempShape || shape;
     
     interactionRef.current = {
       type,
       startX: e.clientX,
       startY: e.clientY,
-      initX: shape.x,
-      initY: shape.y,
-      initWidth: shape.width,
-      initHeight: shape.height
+      initX: currentInit.x,
+      initY: currentInit.y,
+      initWidth: currentInit.width,
+      initHeight: currentInit.height
     };
 
     const handlePointerMove = (moveEvent: PointerEvent) => {
@@ -1421,7 +1447,7 @@ const ShapeRenderer = ({
         }
       }
 
-      updateShape(shape.id, {
+      setTempShape({
         ...shape,
         x: newX,
         y: newY,
@@ -1439,11 +1465,26 @@ const ShapeRenderer = ({
     window.addEventListener('pointerup', handlePointerUp);
   };
 
+  const confirmChange = () => {
+    if (tempShape) {
+      updateShape(shape.id, tempShape);
+      setTempShape(null);
+      if (onConfirm) onConfirm();
+    }
+  };
+
+  const cancelChange = () => {
+    setTempShape(null);
+    if (onCancel) onCancel();
+  };
+
   // Click outside to deselect
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (isActive && isSelected) {
-        setIsSelected(false);
+      const target = e.target as HTMLElement;
+      if (isActive && isSelected && !target.closest('.shape-action-btn')) {
+        // Only deselect if not clicking action buttons
+        // setIsSelected(false); // Keep selected while editing?
       }
     };
     window.addEventListener('click', handleClickOutside);
@@ -1454,12 +1495,13 @@ const ShapeRenderer = ({
     <div
       className={`absolute border-2 ${isSelected ? 'border-blue-500 z-50' : 'border-black z-10'} ${isActive ? 'cursor-move' : 'pointer-events-none'}`}
       style={{
-        left: shape.x,
-        top: shape.y,
-        width: shape.width,
-        height: shape.height,
+        left: displayShape.x,
+        top: displayShape.y,
+        width: displayShape.width,
+        height: displayShape.height,
         boxSizing: 'border-box',
-        pointerEvents: isActive ? 'auto' : 'none'
+        pointerEvents: isActive ? 'auto' : 'none',
+        touchAction: 'none'
       }}
       onPointerDown={(e) => handlePointerDown(e, 'body')}
       onClick={(e) => e.stopPropagation()}
@@ -1470,6 +1512,24 @@ const ShapeRenderer = ({
           <div className="absolute bottom-0 left-0 w-full h-3 -mb-1.5 cursor-ns-resize" onPointerDown={(e) => handlePointerDown(e, 'bottom')} />
           <div className="absolute top-0 left-0 w-3 h-full -ml-1.5 cursor-ew-resize" onPointerDown={(e) => handlePointerDown(e, 'left')} />
           <div className="absolute top-0 right-0 w-3 h-full -mr-1.5 cursor-ew-resize" onPointerDown={(e) => handlePointerDown(e, 'right')} />
+          
+          {/* Action Buttons: Bottom Center on the line */}
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 flex gap-2 z-[60] shape-action-btn">
+            <button 
+              onClick={(e) => { e.stopPropagation(); confirmChange(); }}
+              className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-blue-600 transition-colors"
+              title="Confirm"
+            >
+              <CheckCircle2 size={16} />
+            </button>
+            <button 
+              onClick={(e) => { e.stopPropagation(); cancelChange(); }}
+              className="w-8 h-8 bg-bw-white text-bw-black border border-bw-black/20 rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 transition-colors"
+              title="Cancel"
+            >
+              <X size={16} />
+            </button>
+          </div>
         </>
       )}
     </div>
