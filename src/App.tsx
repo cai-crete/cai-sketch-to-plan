@@ -163,64 +163,6 @@ export default function App() {
 
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
-  // Resize canvases
-  useEffect(() => {
-    const container = document.getElementById('canvas-container');
-    if (!container) return;
-    
-    let resizeTimeout: NodeJS.Timeout;
-
-    const handleResize = () => {
-      layers.forEach(layer => {
-        if (layer.isGrid) return;
-        const canvas = document.getElementById(`canvas-${layer.id}`) as HTMLCanvasElement;
-        if (canvas) {
-          const containerWidth = container.clientWidth;
-          const containerHeight = container.clientHeight;
-          
-          if (containerWidth === 0 || containerHeight === 0) return;
-
-          if (canvas.width !== containerWidth || canvas.height !== containerHeight) {
-            // Create a temporary canvas to hold the current content before resizing
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = canvas.width;
-            tempCanvas.height = canvas.height;
-            const tempCtx = tempCanvas.getContext('2d');
-            if (tempCtx) {
-              tempCtx.drawImage(canvas, 0, 0);
-            }
-
-            canvas.width = containerWidth;
-            canvas.height = containerHeight;
-            
-            const ctx = canvas.getContext('2d');
-            if (ctx && tempCtx) {
-              // Restore at top-left
-              ctx.drawImage(tempCanvas, 0, 0);
-              // Ensure drawing settings are preserved
-              ctx.lineCap = 'round';
-              ctx.lineWidth = 2;
-              ctx.strokeStyle = '#000000';
-            }
-          }
-        }
-      });
-    };
-
-    const resizeObserver = new ResizeObserver(() => {
-      clearTimeout(resizeTimeout);
-      // Small delay to ensure container has settled
-      resizeTimeout = setTimeout(handleResize, 50);
-    });
-
-    resizeObserver.observe(container);
-
-    return () => {
-      resizeObserver.disconnect();
-      clearTimeout(resizeTimeout);
-    };
-  }, [layers]);
-
   // Canvas drawing logic
   const finalizeText = (value: string, x: number, y: number) => {
     if (value.trim() !== '') {
@@ -257,6 +199,31 @@ export default function App() {
     setHistory(prev => [currentState, ...prev].slice(0, 50)); // Keep last 50 steps
   };
 
+  // Fixed size initialization for canvas
+  const initCanvas = (canvas: HTMLCanvasElement) => {
+    if (!canvas) return;
+    const width = 3000; // Fixed large width to prevent clipping
+    const height = 3000; // Fixed large height
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.lineCap = 'round';
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#000000';
+      }
+    }
+  };
+
+  useEffect(() => {
+    layers.forEach(layer => {
+      if (layer.isGrid) return;
+      const canvas = document.getElementById(`canvas-${layer.id}`) as HTMLCanvasElement;
+      if (canvas) initCanvas(canvas);
+    });
+  }, [layers.length]);
+
   const handleUndo = () => {
     if (history.length === 0) return;
     const prevState = history[0];
@@ -285,10 +252,13 @@ export default function App() {
   };
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    e.stopPropagation();
     if ('cancelable' in e && e.cancelable) e.preventDefault();
     
     saveToHistory();
     const canvas = e.target as HTMLCanvasElement;
+    if (canvas.width !== 3000) initCanvas(canvas);
+    
     const rect = canvas.getBoundingClientRect();
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
@@ -336,6 +306,10 @@ export default function App() {
     ctx.beginPath();
     ctx.moveTo(x, y);
     setIsDrawing(true);
+  };
+
+  const preventDoubleTap = (e: any) => {
+    if (e.detail > 1) e.preventDefault();
   };
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -1098,6 +1072,20 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
                               updateTransform={updateLayerTransform} 
                               isActive={selectedLayerId === layer.id && drawMode === 'move'} 
                             />
+                            <canvas
+                              id={`canvas-${layer.id}`}
+                              className={`absolute top-0 left-0 touch-none ${drawMode === 'move' ? 'pointer-events-none' : ''} ${drawMode === 'origin' ? 'cursor-crosshair' : ''} ${drawMode === 'text' ? 'cursor-text' : ''}`}
+                              onMouseDown={startDrawing}
+                              onMouseMove={draw}
+                              onMouseUp={stopDrawing}
+                              onMouseOut={stopDrawing}
+                              onMouseDownCapture={preventDoubleTap}
+                              onDoubleClick={(e) => e.preventDefault()}
+                              onTouchStart={startDrawing}
+                              onTouchMove={draw}
+                              onTouchEnd={stopDrawing}
+                              onClick={handleCanvasClick}
+                            />
                             {layer.shapes?.map(shape => (
                               <ShapeRenderer
                                 key={shape.id}
@@ -1108,18 +1096,6 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
                                 }}
                               />
                             ))}
-                            <canvas
-                              id={`canvas-${layer.id}`}
-                              className={`absolute inset-0 touch-none ${drawMode === 'move' ? 'pointer-events-none' : ''} ${drawMode === 'origin' ? 'cursor-crosshair' : ''} ${drawMode === 'text' ? 'cursor-text' : ''}`}
-                              onMouseDown={startDrawing}
-                              onMouseMove={draw}
-                              onMouseUp={stopDrawing}
-                              onMouseOut={stopDrawing}
-                              onTouchStart={startDrawing}
-                              onTouchMove={draw}
-                              onTouchEnd={stopDrawing}
-                              onClick={handleCanvasClick}
-                            />
                           </>
                         )}
                       </div>
@@ -1367,6 +1343,12 @@ const ShapeRenderer = ({
 
   const displayShape = tempShape || shape;
 
+  // Use a ref for updateShape to avoid closure issues in event listeners (if any)
+  const updateShapeRef = useRef(updateShape);
+  useEffect(() => {
+    updateShapeRef.current = updateShape;
+  }, [updateShape]);
+
   useEffect(() => {
     if (!isActive) {
       setIsSelected(false);
@@ -1467,7 +1449,7 @@ const ShapeRenderer = ({
 
   const confirmChange = () => {
     if (tempShape) {
-      updateShape(shape.id, tempShape);
+      updateShapeRef.current(shape.id, tempShape);
       setTempShape(null);
       if (onConfirm) onConfirm();
     }
@@ -1513,21 +1495,21 @@ const ShapeRenderer = ({
           <div className="absolute top-0 left-0 w-3 h-full -ml-1.5 cursor-ew-resize" onPointerDown={(e) => handlePointerDown(e, 'left')} />
           <div className="absolute top-0 right-0 w-3 h-full -mr-1.5 cursor-ew-resize" onPointerDown={(e) => handlePointerDown(e, 'right')} />
           
-          {/* Action Buttons: Bottom Center on the line */}
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 flex gap-2 z-[60] shape-action-btn">
-            <button 
-              onClick={(e) => { e.stopPropagation(); confirmChange(); }}
-              className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-blue-600 transition-colors"
-              title="Confirm"
-            >
-              <CheckCircle2 size={16} />
-            </button>
+          {/* Action Buttons: Bottom Center INSIDE the shape at the bottom */}
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex z-[60] shape-action-btn border border-bw-black bg-bw-white">
             <button 
               onClick={(e) => { e.stopPropagation(); cancelChange(); }}
-              className="w-8 h-8 bg-bw-white text-bw-black border border-bw-black/20 rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 transition-colors"
+              className="w-8 h-8 flex items-center justify-center hover:bg-bw-black/10 transition-colors border-r border-bw-black"
               title="Cancel"
             >
               <X size={16} />
+            </button>
+            <button 
+              onClick={(e) => { e.stopPropagation(); confirmChange(); }}
+              className="w-8 h-8 flex items-center justify-center hover:bg-bw-black/10 transition-colors"
+              title="Confirm"
+            >
+              <CheckCircle2 size={16} />
             </button>
           </div>
         </>
