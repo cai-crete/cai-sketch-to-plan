@@ -128,6 +128,7 @@ export default function App() {
 
   // --- New UI State ---
   const [activeTab, setActiveTab] = useState<'create' | 'result'>('create');
+  const [resultCode, setResultCode] = useState<string>('');
   const [showLibrary, setShowLibrary] = useState(false);
   const [libraryItems, setLibraryItems] = useState<LibraryItem[]>([]);
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
@@ -961,10 +962,16 @@ User Architectural Logic (Structural Driver): ${textPrompt || 'Standard modern l
 
       // --- Step 1: Sketch Analysis ---
       setCurrentStep(0); // Zoning Analysis & Axis Alignment
-      const analysisPrompt = `Analyze the provided architectural sketch and text prompt. 
-Extract structural logic, zoning, boundaries, and flow requirements as defined in the following system prompt:
+      const analysisPrompt = `Analyze the provided architectural sketch and text prompt according to the system prompt below. 
+CRITICAL OCR INSTRUCTION: You MUST read and extract all handwritten or typed text in the sketch (e.g. room names like "Living", "Kitchen", dimensions, "ENTRANCE", "Hall", arrows).
+CRITICAL PROTOCOL: You MUST perform the 5-Step Deep Spatial Analysis and output the Micro-Report Form.
+CRITICAL FORMAT: You MUST include the RESULT Panel Output Format inside a \`\`\`text block at the end of your response.
+
+System Prompt:
 ${finalPrompt}
-Return only the structural analysis and rectified logic for generation.`;
+Return the structural analysis, rectified logic, Micro-Report Form, and RESULT Panel Output Format.`;
+
+      console.log(`[Model Triggered] Sketch Analysis using: ${SKETCH_ANALYSIS}`);
 
       let analysisResponse;
       try {
@@ -983,8 +990,17 @@ Return only the structural analysis and rectified logic for generation.`;
       const structuralDriverRes = analysisResponse.candidates?.[0]?.content?.parts?.[0]?.text || "Standard modern layout";
       console.log("Analysis Result:", structuralDriverRes);
 
+      // Extract resultCode from the Markdown block
+      const resultMatch = structuralDriverRes.match(/```(?:text)?([\s\S]*?)```/);
+      if (resultMatch && resultMatch[1]) {
+        setResultCode(resultMatch[1].trim());
+      } else {
+        setResultCode("No formatted RESULT found in analysis.");
+      }
+
       // --- Step 2: Plan Image Generation ---
       setCurrentStep(3); // Boundary Extraction, Material Layering, Flow & Routing
+      console.log(`[Model Triggered] Plan Generation using: ${PLAN_IMAGE_GEN}`);
       const generationPrompt = `${finalPrompt}
 Based on the following structural analysis:
 ${structuralDriverRes}
@@ -1332,13 +1348,22 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
               {/* 섹션 1: 텍스트 입력 (Prompt) */}
               <div className="space-y-3 flex flex-col flex-1 min-h-[30%]">
                 <label className="font-display text-xl block">CODE</label>
-                <textarea
-                  value={textPrompt}
-                  onChange={(e) => setTextPrompt(e.target.value)}
-                  className="w-full flex-1 p-3 font-mono text-xs bg-transparent border border-bw-black dark:border-bw-white focus:outline-none resize-none placeholder-gray-400 rounded-none min-h-[100px]"
-                  placeholder="Insert parameters here..."
-                  disabled={isGenerating}
-                />
+                {activeTab === 'create' ? (
+                  <textarea
+                    value={textPrompt}
+                    onChange={(e) => setTextPrompt(e.target.value)}
+                    className="w-full flex-1 p-3 font-mono text-xs bg-transparent border border-bw-black dark:border-bw-white focus:outline-none resize-none placeholder-gray-400 rounded-none min-h-[100px]"
+                    placeholder="Insert parameters here..."
+                    disabled={isGenerating}
+                  />
+                ) : (
+                  <textarea
+                    value={resultCode}
+                    readOnly
+                    className="w-full flex-1 p-3 font-mono text-xs bg-transparent border border-bw-black dark:border-bw-white focus:outline-none resize-none placeholder-gray-400 rounded-none min-h-[100px] overflow-y-auto"
+                    placeholder="Analysis results will appear here..."
+                  />
+                )}
               </div>
 
               {/* 섹션 2: 레이어 관리 (Layers) */}
