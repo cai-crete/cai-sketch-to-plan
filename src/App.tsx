@@ -13,6 +13,8 @@ interface Shape {
   width: number;
   height: number;
   isSelected?: boolean;
+  text?: string;
+  fontSize?: number;
 }
 
 interface LayerTransform {
@@ -57,13 +59,13 @@ const removeExteriorWhite = async (dataUrl: string): Promise<string> => {
       canvas.height = img.height;
       const ctx = canvas.getContext('2d');
       if (!ctx) return resolve(dataUrl);
-      
+
       ctx.drawImage(img, 0, 0);
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const data = imageData.data;
-      
-      const isWhite = (i: number) => data[i] > 240 && data[i+1] > 240 && data[i+2] > 240;
-      
+
+      const isWhite = (i: number) => data[i] > 240 && data[i + 1] > 240 && data[i + 2] > 240;
+
       const stackX = [];
       const stackY = [];
       for (let x = 0; x < canvas.width; x++) {
@@ -74,18 +76,18 @@ const removeExteriorWhite = async (dataUrl: string): Promise<string> => {
         stackX.push(0); stackY.push(y);
         stackX.push(canvas.width - 1); stackY.push(y);
       }
-      
+
       const visited = new Uint8Array(canvas.width * canvas.height);
-      
+
       while (stackX.length > 0) {
         const x = stackX.pop()!;
         const y = stackY.pop()!;
         if (x < 0 || x >= canvas.width || y < 0 || y >= canvas.height) continue;
-        
+
         const idx = y * canvas.width + x;
         if (visited[idx]) continue;
         visited[idx] = 1;
-        
+
         const pixelIdx = idx * 4;
         if (isWhite(pixelIdx)) {
           data[pixelIdx + 3] = 0; // Make transparent
@@ -95,7 +97,7 @@ const removeExteriorWhite = async (dataUrl: string): Promise<string> => {
           stackX.push(x); stackY.push(y - 1);
         }
       }
-      
+
       ctx.putImageData(imageData, 0, 0);
       resolve(canvas.toDataURL('image/png'));
     };
@@ -107,7 +109,7 @@ const removeExteriorWhite = async (dataUrl: string): Promise<string> => {
 export default function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [textPrompt, setTextPrompt] = useState('');
-  
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [loadingSeconds, setLoadingSeconds] = useState(0);
@@ -143,13 +145,13 @@ export default function App() {
   // Canvas state
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawMode, setDrawMode] = useState<'pen' | 'eraser' | 'move' | 'origin' | 'rectangle' | 'text'>('pen');
-  const [origins, setOrigins] = useState<{x: number, y: number}[]>([]);
-  const [textInput, setTextInput] = useState<{x: number, y: number, value: string} | null>(null);
-  const [eraserPos, setEraserPos] = useState<{x: number, y: number} | null>(null);
+  const [origins, setOrigins] = useState<{ x: number, y: number }[]>([]);
+  const [textInput, setTextInput] = useState<{ x: number, y: number, value: string } | null>(null);
+  const [eraserPos, setEraserPos] = useState<{ x: number, y: number } | null>(null);
   const [history, setHistory] = useState<any[]>([]);
-  
-  const rectStartRef = useRef<{x: number, y: number} | null>(null);
-  const rectEndRef = useRef<{x: number, y: number} | null>(null);
+
+  const rectStartRef = useRef<{ x: number, y: number } | null>(null);
+  const rectEndRef = useRef<{ x: number, y: number } | null>(null);
   const snapshotRef = useRef<ImageData | null>(null);
 
   // Theme effect
@@ -165,25 +167,21 @@ export default function App() {
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
   // Canvas drawing logic
-  const finalizeText = (value: string, x: number, y: number) => {
+  const addTextShape = (value: string, x: number, y: number) => {
     if (value.trim() !== '') {
-      const canvas = document.getElementById(`canvas-${selectedLayerId}`) as HTMLCanvasElement;
-      if (canvas) {
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.font = '20px sans-serif';
-          ctx.fillStyle = '#000000';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(value, x, y);
-        }
-      }
+      const newShape: Shape = {
+        id: `text-${Date.now()}`,
+        type: 'rectangle', // We'll extend ShapeRenderer to handle text
+        x,
+        y: y - 10, // approximate centering
+        width: value.length * 10 + 20, // dynamic width
+        height: 30,
+        text: value,
+        fontSize: 20
+      };
+      setLayers(layers.map(l => l.id === selectedLayerId ? { ...l, shapes: [...(l.shapes || []), newShape] } : l));
     }
-    setTextInput(prev => {
-      if (prev && prev.x === x && prev.y === y) {
-        return null;
-      }
-      return prev;
-    });
+    setTextInput(null);
   };
 
   // Undo Logic
@@ -255,15 +253,15 @@ export default function App() {
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     e.stopPropagation();
     if ('cancelable' in e && e.cancelable) e.preventDefault();
-    
+
     saveToHistory();
     const canvas = e.target as HTMLCanvasElement;
     if (canvas.width !== 3000) initCanvas(canvas);
-    
+
     const rect = canvas.getBoundingClientRect();
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    
+
     // Calculate unscaled coordinates accurately
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
@@ -279,9 +277,9 @@ export default function App() {
       const gridSize = 45;
       const snappedX = Math.round(x / gridSize) * gridSize;
       const snappedY = Math.round(y / gridSize) * gridSize;
-      
+
       const existingIndex = origins.findIndex(o => Math.abs(o.x - snappedX) < 10 && Math.abs(o.y - snappedY) < 10);
-      
+
       if (existingIndex !== -1) {
         setOrigins(prev => prev.filter((_, i) => i !== existingIndex));
       } else {
@@ -292,12 +290,12 @@ export default function App() {
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     if (drawMode === 'rectangle') {
       const snapGrid = 150 / 20; // 7.5px = 150mm
       const snappedX = Math.round(x / snapGrid) * snapGrid;
       const snappedY = Math.round(y / snapGrid) * snapGrid;
-      
+
       snapshotRef.current = ctx.getImageData(0, 0, canvas.width, canvas.height);
       rectStartRef.current = { x: snappedX, y: snappedY };
       setIsDrawing(true);
@@ -306,8 +304,7 @@ export default function App() {
 
     ctx.beginPath();
     ctx.moveTo(x, y);
-    ctx.lineTo(x, y); // Draw single point immediately to prevent straight line artifact
-    ctx.stroke();
+    // Remove individual stroke() here to avoid point-jumping artifacts
     setIsDrawing(true);
   };
 
@@ -329,7 +326,6 @@ export default function App() {
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
     if (e.cancelable) e.preventDefault();
-    if (!isDrawing) return;
     const canvas = e.target as HTMLCanvasElement;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -337,24 +333,30 @@ export default function App() {
     const rect = canvas.getBoundingClientRect();
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    
+
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     const x = (clientX - rect.left) * scaleX;
     const y = (clientY - rect.top) * scaleY;
 
+    if (drawMode === 'eraser') {
+      setEraserPos({ x: clientX - rect.left, y: clientY - rect.top });
+    }
+
+    if (!isDrawing) return;
+
     if (drawMode === 'rectangle') {
       if (!snapshotRef.current || !rectStartRef.current) return;
-      
+
       const snapGrid = 150 / 20; // 7.5px = 150mm
       const snappedX = Math.round(x / snapGrid) * snapGrid;
       const snappedY = Math.round(y / snapGrid) * snapGrid;
-      
+
       rectEndRef.current = { x: snappedX, y: snappedY };
-      
+
       const startX = rectStartRef.current.x;
       const startY = rectStartRef.current.y;
-      
+
       ctx.putImageData(snapshotRef.current, 0, 0);
       ctx.beginPath();
       // CSS 그리드(1px 두께, x~x+1)와 Canvas 선(2px 두께, 중심 x)의 시각적 오차(0.5px) 보정
@@ -366,36 +368,40 @@ export default function App() {
       return;
     }
 
-    ctx.lineTo(x, y);
-    
     if (drawMode === 'eraser') {
       ctx.globalCompositeOperation = 'destination-out';
       ctx.lineWidth = 20;
-      
+    } else {
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2;
+    }
+
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.lineTo(x, y);
+
+    if (drawMode === 'eraser') {
       // Efficiently delete shapes that the eraser touches
       const currentLayer = layers.find(l => l.id === selectedLayerId);
       if (currentLayer && currentLayer.shapes && currentLayer.shapes.length > 0) {
         const remainingShapes = currentLayer.shapes.filter(shape => {
           // simple collision check: if eraser point (x,y) is inside shape rectangle
           const isInside = (
-            x >= shape.x && 
-            x <= shape.x + shape.width && 
-            y >= shape.y && 
+            x >= shape.x &&
+            x <= shape.x + shape.width &&
+            y >= shape.y &&
             y <= shape.y + shape.height
           );
           return !isInside;
         });
-        
+
         if (remainingShapes.length !== currentLayer.shapes.length) {
           setLayers(layers.map(l => l.id === selectedLayerId ? { ...l, shapes: remainingShapes } : l));
         }
       }
-    } else {
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 2;
     }
-    
+
     ctx.lineCap = 'round';
     ctx.stroke();
   };
@@ -406,10 +412,10 @@ export default function App() {
       const startY = rectStartRef.current.y;
       const endX = rectEndRef.current.x;
       const endY = rectEndRef.current.y;
-      
+
       const width = endX - startX;
       const height = endY - startY;
-      
+
       if (width !== 0 && height !== 0) {
         // Restore canvas to remove raster preview
         const canvas = document.getElementById(`canvas-${selectedLayerId}`) as HTMLCanvasElement;
@@ -417,7 +423,7 @@ export default function App() {
         if (ctx) {
           ctx.putImageData(snapshotRef.current, 0, 0);
         }
-        
+
         // Add shape to layer
         const newShape: Shape = {
           id: `shape-${Date.now()}`,
@@ -427,7 +433,7 @@ export default function App() {
           width: Math.abs(width),
           height: Math.abs(height),
         };
-        
+
         setLayers(layers.map(l => l.id === selectedLayerId ? { ...l, shapes: [...(l.shapes || []), newShape] } : l));
       }
     }
@@ -445,7 +451,7 @@ export default function App() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
+
     // Also clear shapes and uploaded image for this layer
     setLayers(layers.map(l => l.id === selectedLayerId ? { ...l, image: null, shapes: [] } : l));
     setEraserPos(null);
@@ -453,7 +459,7 @@ export default function App() {
 
   // Layer System Handlers
   const updateLayerTransform = (id: string, transform: LayerTransform) => {
-    setLayers(layers.map(layer => 
+    setLayers(layers.map(layer =>
       layer.id === id ? { ...layer, transform } : layer
     ));
   };
@@ -482,20 +488,20 @@ export default function App() {
   };
 
   const toggleLayerVisibility = (id: string) => {
-    setLayers(layers.map(layer => 
+    setLayers(layers.map(layer =>
       layer.id === id ? { ...layer, visible: !layer.visible } : layer
     ));
   };
 
   const updateLayerOpacity = (id: string, opacity: number) => {
-    setLayers(layers.map(layer => 
+    setLayers(layers.map(layer =>
       layer.id === id ? { ...layer, opacity } : layer
     ));
   };
 
   const renameLayer = (id: string, newName: string) => {
     if (!newName.trim()) return;
-    setLayers(layers.map(layer => 
+    setLayers(layers.map(layer =>
       layer.id === id ? { ...layer, name: newName } : layer
     ));
   };
@@ -526,7 +532,7 @@ export default function App() {
   const compositeLayersForExport = async (): Promise<string> => {
     const container = document.getElementById('canvas-container');
     if (!container) return '';
-    
+
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = container.clientWidth;
     tempCanvas.height = container.clientHeight;
@@ -537,13 +543,13 @@ export default function App() {
     ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
 
     const reversedLayers = [...layers].reverse();
-    
+
     for (const layer of reversedLayers) {
       if (!layer.visible) continue;
       if (layer.id !== 'layer-1') continue; // Only SKETCH layer affects generation
 
       ctx.globalAlpha = layer.opacity / 100;
-      
+
       if (layer.isGrid) {
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 1;
@@ -559,18 +565,18 @@ export default function App() {
           const img = new Image();
           img.src = layer.image;
           await new Promise(resolve => { img.onload = resolve; });
-          
+
           const transform = layer.transform || { x: 0, y: 0, scale: 1, rotation: 0 };
-          
+
           ctx.save();
           ctx.translate(tempCanvas.width / 2 + transform.x, tempCanvas.height / 2 + transform.y);
           ctx.rotate((transform.rotation * Math.PI) / 180);
           ctx.scale(transform.scale, transform.scale);
-          
+
           const scale = Math.min(tempCanvas.width / img.width, tempCanvas.height / img.height);
           const w = img.width * scale;
           const h = img.height * scale;
-          
+
           ctx.drawImage(img, -w / 2, -h / 2, w, h);
           ctx.restore();
         }
@@ -586,14 +592,14 @@ export default function App() {
           });
           ctx.restore();
         }
-        
+
         const layerCanvas = document.getElementById(`canvas-${layer.id}`) as HTMLCanvasElement;
         if (layerCanvas) {
           ctx.drawImage(layerCanvas, 0, 0);
         }
       }
     }
-    
+
     return tempCanvas.toDataURL('image/jpeg').split(',')[1];
   };
 
@@ -920,14 +926,14 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
         const processedImgUrl = await removeExteriorWhite(generatedImgUrl);
         setGeneratedImage(processedImgUrl);
         setActiveTab('result');
-        
+
         // Save to library
         setLibraryItems(prev => [{
           id: `lib-${Date.now()}`,
           image: processedImgUrl,
           timestamp: Date.now()
         }, ...prev]);
-        
+
         const newLayer: Layer = {
           id: `layer-${Date.now()}`,
           name: 'PLAN',
@@ -1007,7 +1013,7 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
                     <div key={item.id} className="group relative aspect-square border border-bw-black/10 dark:border-bw-white/10 overflow-hidden bg-bw-black/5 dark:bg-bw-white/5">
                       <img src={item.image} alt="Saved Plan" className="w-full h-full object-contain p-2" />
                       <div className="absolute inset-0 bg-bw-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                        <button 
+                        <button
                           onClick={() => {
                             const link = document.createElement('a');
                             link.download = `plan-${item.id}.png`;
@@ -1019,7 +1025,7 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
                         >
                           <Download size={20} />
                         </button>
-                        <button 
+                        <button
                           onClick={() => {
                             setLibraryItems(prev => prev.filter(i => i.id !== item.id));
                           }}
@@ -1049,7 +1055,7 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
               <button onClick={() => setDrawMode('pen')} className={`p-2 w-full flex items-center justify-center h-[34px] hover:bg-bw-black/10 dark:hover:bg-bw-white/10 transition-colors ${drawMode === 'pen' ? 'bg-bw-black/10 dark:bg-bw-white/10' : ''}`} title="Pen">
                 <Pen size={16} />
               </button>
-              <button onClick={() => setDrawMode('eraser')} className={`p-2 w-full flex items-center justify-center h-[34px] hover:bg-bw-black/10 dark:hover:bg-bw-white/10 transition-colors border-t border-bw-black dark:border-bw-white ${drawMode === 'eraser' ? 'bg-bw-black/10 dark:bg-bw-white/10' : ''}`} title="Eraser">
+              <button onClick={() => { setDrawMode('eraser'); setEraserPos(null); }} className={`p-2 w-full flex items-center justify-center h-[34px] hover:bg-bw-black/10 dark:hover:bg-bw-white/10 transition-colors border-t border-bw-black dark:border-bw-white ${drawMode === 'eraser' ? 'bg-bw-black/10 dark:bg-bw-white/10' : ''}`} title="Eraser">
                 <Eraser size={16} />
               </button>
               <button onClick={() => setDrawMode('rectangle')} className={`p-2 w-full flex items-center justify-center h-[34px] hover:bg-bw-black/10 dark:hover:bg-bw-white/10 transition-colors border-t border-bw-black dark:border-bw-white ${drawMode === 'rectangle' ? 'bg-bw-black/10 dark:bg-bw-white/10' : ''}`} title="Rectangle">
@@ -1070,17 +1076,11 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
               <button onClick={clearCurrentLayer} className="p-2 w-full flex items-center justify-center h-[34px] hover:bg-red-500 hover:text-bw-white transition-colors border-t border-bw-black dark:border-bw-white text-red-500" title="Clear Layer">
                 <Trash2 size={16} />
               </button>
-              {drawMode === 'eraser' && (
-                <div className="flex-1 opacity-50 flex flex-col items-center justify-center text-[10px] font-bold py-2 border-t border-bw-black dark:border-bw-white">
-                  <span>ERASER</span>
-                  <span>MODE</span>
-                </div>
-              )}
             </div>
 
             {activeTab === 'create' ? (
-              <div 
-                id="canvas-container" 
+              <div
+                id="canvas-container"
                 className="absolute inset-0 overflow-hidden bg-bw-white dark:bg-bw-black select-none touch-none"
                 onPointerLeave={() => setEraserPos(null)}
                 onContextMenu={(e) => e.preventDefault()}
@@ -1089,23 +1089,23 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
                 <div className="w-full h-full relative dark:invert">
                   {[...layers].reverse().map((layer, idx) => {
                     return (
-                      <div 
-                        key={layer.id} 
-                        className="absolute inset-0" 
-                        style={{ 
-                          opacity: layer.visible ? layer.opacity / 100 : 0, 
-                          zIndex: idx, 
-                          pointerEvents: selectedLayerId === layer.id && layer.visible ? 'auto' : 'none' 
+                      <div
+                        key={layer.id}
+                        className="absolute inset-0"
+                        style={{
+                          opacity: layer.visible ? layer.opacity / 100 : 0,
+                          zIndex: idx,
+                          pointerEvents: selectedLayerId === layer.id && layer.visible ? 'auto' : 'none'
                         }}
                       >
                         {layer.isGrid ? (
                           <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(#000000 1px, transparent 1px), linear-gradient(90deg, #000000 1px, transparent 1px)', backgroundSize: '45px 45px', backgroundPosition: '0 0' }}></div>
                         ) : (
                           <>
-                            <TransformableImage 
-                              layer={layer} 
-                              updateTransform={updateLayerTransform} 
-                              isActive={selectedLayerId === layer.id && drawMode === 'move'} 
+                            <TransformableImage
+                              layer={layer}
+                              updateTransform={updateLayerTransform}
+                              isActive={selectedLayerId === layer.id && drawMode === 'move'}
                             />
                             <canvas
                               id={`canvas-${layer.id}`}
@@ -1139,8 +1139,8 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
                 </div>
 
                 {drawMode === 'eraser' && eraserPos && (
-                  <div 
-                    className="absolute pointer-events-none rounded-full border-2 border-red-500 z-[100] transition-none"
+                  <div
+                    className="absolute pointer-events-none rounded-full border-2 border-red-500 z-[999]"
                     style={{
                       left: eraserPos.x,
                       top: eraserPos.y,
@@ -1152,7 +1152,7 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
                 )}
 
                 {origins.map((origin, idx) => (
-                  <div 
+                  <div
                     key={idx}
                     className="absolute z-40 pointer-events-none"
                     style={{ left: origin.x, top: origin.y }}
@@ -1174,7 +1174,7 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
                     type="text"
                     value={textInput.value}
                     onChange={(e) => setTextInput({ ...textInput, value: e.target.value })}
-                    onBlur={(e) => finalizeText(e.target.value, textInput.x, textInput.y)}
+                    onBlur={(e) => addTextShape(e.target.value, textInput.x, textInput.y)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.currentTarget.blur();
@@ -1227,7 +1227,7 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
 
             {/* 패널 내부 컨텐츠 영역 */}
             <div className={`flex-1 min-h-0 overflow-y-auto p-6 flex flex-col gap-5 custom-scrollbar ${isRightPanelOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'} transition-opacity duration-200 delay-100`}>
-              
+
               {/* View Toggle */}
               <div className="flex border border-bw-black dark:border-bw-white shrink-0">
                 <button onClick={() => setActiveTab('create')} className={`flex-1 py-2 font-display text-sm text-center ${activeTab === 'create' ? 'bg-bw-black text-bw-white dark:bg-bw-white dark:text-bw-black' : 'hover:bg-bw-black/5 dark:hover:bg-bw-white/5'}`}>CREATE</button>
@@ -1250,7 +1250,7 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
               <div className="space-y-3 flex-1 flex flex-col min-h-0">
                 <div className="flex items-center justify-between">
                   <label className="font-display text-xl block">LAYERS</label>
-                  <button 
+                  <button
                     onClick={addLayer}
                     className="p-1 border border-bw-black dark:border-bw-white hover:bg-bw-black hover:text-bw-white dark:hover:bg-bw-white dark:hover:text-bw-black transition-colors"
                     title="Add Layer"
@@ -1258,11 +1258,11 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
                     <Plus size={16} />
                   </button>
                 </div>
-                
+
                 <div className="flex-1 overflow-y-auto border border-bw-black dark:border-bw-white custom-scrollbar p-2 space-y-2">
                   {layers.map((layer, index) => (
-                    <div 
-                      key={layer.id} 
+                    <div
+                      key={layer.id}
                       className={`p-2 border ${selectedLayerId === layer.id ? 'border-bw-black dark:border-bw-white bg-bw-black/5 dark:bg-bw-white/10' : 'border-bw-black/20 dark:border-bw-white/20 bg-transparent'} flex flex-col gap-2 ${!layer.visible ? 'opacity-50' : ''} cursor-pointer transition-colors`}
                       onClick={() => setSelectedLayerId(layer.id)}
                     >
@@ -1273,7 +1273,7 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
                             <button onClick={(e) => { e.stopPropagation(); moveLayer(index, 'down'); }} disabled={index === layers.length - 1} className="text-gray-400 hover:text-bw-black dark:hover:text-bw-white disabled:opacity-30">▼</button>
                           </div>
                           {editingLayerId === layer.id ? (
-                            <input 
+                            <input
                               autoFocus
                               className="font-mono text-xs flex-1 bg-bw-white dark:bg-bw-black border border-bw-black dark:border-bw-white px-1 py-0.5 outline-none"
                               defaultValue={layer.name}
@@ -1290,7 +1290,7 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
                               onClick={(e) => e.stopPropagation()}
                             />
                           ) : (
-                            <span 
+                            <span
                               className="font-mono text-xs truncate flex-1 hover:bg-bw-black/5 dark:hover:bg-bw-white/5 px-1 py-0.5 rounded cursor-text"
                               onClick={(e) => { e.stopPropagation(); setEditingLayerId(layer.id); }}
                               title="Click to rename"
@@ -1320,10 +1320,10 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
                         {!layer.isGrid && (
                           <>
                             <span className="font-mono text-[10px] w-8">OPC</span>
-                            <input 
-                              type="range" 
-                              min="0" 
-                              max="100" 
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
                               value={layer.opacity}
                               onChange={(e) => updateLayerOpacity(layer.id, parseInt(e.target.value))}
                               className="flex-1 h-1 bg-bw-black/20 dark:bg-bw-white/20 appearance-none cursor-pointer"
@@ -1407,19 +1407,19 @@ const ShapeRenderer = ({
   const handlePointerDown = (e: React.PointerEvent, type: string) => {
     if (!isActive) return;
     e.stopPropagation();
-    
+
     // Prevent default scrolling on touch
     if (e.pointerType === 'touch') {
       (e.target as HTMLElement).style.touchAction = 'none';
     }
-    
+
     if (type === 'body') {
       setIsSelected(true);
       if (!tempShape) setTempShape({ ...shape });
     }
-    
+
     const currentInit = tempShape || shape;
-    
+
     interactionRef.current = {
       type,
       startX: e.clientX,
@@ -1442,9 +1442,9 @@ const ShapeRenderer = ({
 
       const dx = (moveEvent.clientX - interactionRef.current.startX) * scaleX;
       const dy = (moveEvent.clientY - interactionRef.current.startY) * scaleY;
-      
+
       const snapGrid = 150 / 20; // 7.5px = 150mm
-      
+
       let newX = interactionRef.current.initX;
       let newY = interactionRef.current.initY;
       let newWidth = interactionRef.current.initWidth;
@@ -1526,7 +1526,7 @@ const ShapeRenderer = ({
 
   return (
     <div
-      className={`absolute border-2 ${isSelected ? 'border-blue-500 z-50' : 'border-black z-10'} ${isActive ? 'cursor-move' : 'pointer-events-none'}`}
+      className={`absolute ${isSelected ? 'border-2 border-blue-500 z-50' : (shape.text ? '' : 'border-2 border-black z-10')} ${isActive ? 'cursor-move' : 'pointer-events-none'}`}
       style={{
         left: displayShape.x,
         top: displayShape.y,
@@ -1534,21 +1534,35 @@ const ShapeRenderer = ({
         height: displayShape.height,
         boxSizing: 'border-box',
         pointerEvents: isActive ? 'auto' : 'none',
-        touchAction: 'none'
+        touchAction: 'none',
+        userSelect: 'none'
       }}
       onPointerDown={(e) => handlePointerDown(e, 'body')}
       onClick={(e) => e.stopPropagation()}
     >
+      {shape.text ? (
+        <div
+          className="w-full h-full flex items-center justify-center font-sans text-bw-black"
+          style={{ fontSize: shape.fontSize || 20 }}
+        >
+          {shape.text}
+        </div>
+      ) : null}
+
       {isSelected && isActive && (
         <>
-          <div className="absolute top-0 left-0 w-full h-3 -mt-1.5 cursor-ns-resize" onPointerDown={(e) => handlePointerDown(e, 'top')} />
-          <div className="absolute bottom-0 left-0 w-full h-3 -mb-1.5 cursor-ns-resize" onPointerDown={(e) => handlePointerDown(e, 'bottom')} />
-          <div className="absolute top-0 left-0 w-3 h-full -ml-1.5 cursor-ew-resize" onPointerDown={(e) => handlePointerDown(e, 'left')} />
-          <div className="absolute top-0 right-0 w-3 h-full -mr-1.5 cursor-ew-resize" onPointerDown={(e) => handlePointerDown(e, 'right')} />
-          
+          {!shape.text && (
+            <>
+              <div className="absolute top-0 left-0 w-full h-3 -mt-1.5 cursor-ns-resize" onPointerDown={(e) => handlePointerDown(e, 'top')} />
+              <div className="absolute bottom-0 left-0 w-full h-3 -mb-1.5 cursor-ns-resize" onPointerDown={(e) => handlePointerDown(e, 'bottom')} />
+              <div className="absolute top-0 left-0 w-3 h-full -ml-1.5 cursor-ew-resize" onPointerDown={(e) => handlePointerDown(e, 'left')} />
+              <div className="absolute top-0 right-0 w-3 h-full -mr-1.5 cursor-ew-resize" onPointerDown={(e) => handlePointerDown(e, 'right')} />
+            </>
+          )}
+
           {/* Action Buttons: 2pt Padding below the bottom line */}
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[calc(100%+2px)] flex z-[60] shape-action-btn">
-            <button 
+            <button
               onClick={(e) => { e.stopPropagation(); confirmChange(); }}
               className="flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
               title="Confirm"
@@ -1562,13 +1576,13 @@ const ShapeRenderer = ({
   );
 };
 
-const TransformableImage = ({ 
-  layer, 
-  updateTransform, 
-  isActive 
-}: { 
-  layer: Layer; 
-  updateTransform: (id: string, transform: LayerTransform) => void; 
+const TransformableImage = ({
+  layer,
+  updateTransform,
+  isActive
+}: {
+  layer: Layer;
+  updateTransform: (id: string, transform: LayerTransform) => void;
   isActive: boolean;
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1595,7 +1609,7 @@ const TransformableImage = ({
       initScale: transform.scale,
       initRotation: transform.rotation,
     };
-    
+
     const handlePointerMove = (moveEvent: PointerEvent) => {
       const { type, startX, startY, initX, initY, initScale, initRotation } = interactionRef.current;
       const dx = moveEvent.clientX - startX;
@@ -1662,7 +1676,7 @@ const TransformableImage = ({
       const angle = Math.atan2(dy, dx) * (180 / Math.PI);
 
       const { initScale, initRotation, initDistance, initAngle } = interactionRef.current;
-      
+
       const scaleDelta = distance / initDistance;
       const angleDelta = angle - initAngle;
 
@@ -1677,11 +1691,11 @@ const TransformableImage = ({
   if (!layer.image) return null;
 
   return (
-    <div 
+    <div
       ref={containerRef}
       className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden"
     >
-      <div 
+      <div
         className={`relative ${isActive ? 'pointer-events-auto' : 'pointer-events-none'}`}
         style={{
           transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale}) rotate(${transform.rotation}deg)`,
@@ -1692,16 +1706,16 @@ const TransformableImage = ({
         onTouchMove={handleTouchMove}
       >
         <img src={layer.image} className="max-w-full max-h-full object-contain select-none" draggable={false} />
-        
+
         {isActive && (
           <>
             <div className="absolute inset-0 border border-bw-black pointer-events-none"></div>
-            
+
             <div className="absolute -top-2 -left-2 w-4 h-4 bg-bw-white border border-bw-black cursor-nwse-resize pointer-events-auto" onPointerDown={(e) => handlePointerDown(e, 'resize')}></div>
             <div className="absolute -top-2 -right-2 w-4 h-4 bg-bw-white border border-bw-black cursor-nesw-resize pointer-events-auto" onPointerDown={(e) => handlePointerDown(e, 'resize')}></div>
             <div className="absolute -bottom-2 -left-2 w-4 h-4 bg-bw-white border border-bw-black cursor-nesw-resize pointer-events-auto" onPointerDown={(e) => handlePointerDown(e, 'resize')}></div>
             <div className="absolute -bottom-2 -right-2 w-4 h-4 bg-bw-white border border-bw-black cursor-nwse-resize pointer-events-auto" onPointerDown={(e) => handlePointerDown(e, 'resize')}></div>
-            
+
             <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-6 h-6 bg-bw-white border border-bw-black flex items-center justify-center cursor-grab pointer-events-auto" onPointerDown={(e) => handlePointerDown(e, 'rotate')}>
               <RefreshCw size={12} className="text-bw-black" />
             </div>
