@@ -1,0 +1,139 @@
+project:
+  name: sketch-to-plan
+  description: Convert architectural sketches into professional CAD-style floor plans using Google Gemini AI
+  type: web_application
+
+tech_stack:
+  frontend:
+    framework: React 19.0.0
+    language: TypeScript 5.8.2
+    build_tool: Vite 6.2.0
+    styling: Tailwind CSS 4.1.14
+    ui_libraries:
+      - lucide-react
+      - motion (animations)
+    http_client: Fetch API (native)
+  backend:
+    runtime: Node.js
+    framework: Express.js 4.21.2
+    deployment: Vercel (serverless functions)
+    ai_sdk: "@google/genai 1.29.0"
+    database: better-sqlite3 12.4.1 (future use)
+    executor: tsx 4.21.0
+  configuration:
+    path_alias: "@"
+    env_vars:
+      - GEMINI_API_KEY
+      - APP_URL
+
+features:
+  - name: Sketch Input & Canvas
+    description: Multi-layer drawing system with pen, eraser, rectangle, text, and move tools
+    details:
+      - Layer management with visibility and opacity control
+      - Undo/redo history (up to 50 steps)
+      - Grid overlay (900mm x 900mm reference)
+      - Shape editing and text annotation
+
+  - name: AI Analysis Pipeline
+    description: Two-step AI pipeline converting sketch to floor plan
+    details:
+      - Step 1 - Sketch Analysis via gemini-2.5-pro (OCR + 5-step spatial analysis)
+      - Step 2 - Plan Image Generation via gemini-2.5-flash-image
+      - Fallback model support
+
+  - name: Hybrid Authentication
+    description: BYOK (Bring Your Own Key) + Server Proxy modes
+    details:
+      - Personal Gemini API key stored in localStorage
+      - Server-side API key via /api/generate/* endpoints
+      - Auto mode detection based on key availability
+
+  - name: Theme Toggle
+    description: Dark and light mode support
+
+  - name: Library
+    description: Store and display generated floor plans with timestamps
+
+  - name: Result Display
+    description: Show generated CAD-style floor plan image with analysis data
+
+api_endpoints:
+  - path: /api/generate/analysis
+    method: POST
+    description: Sketch analysis using Gemini AI
+    request_body:
+      - model (string)
+      - contents (array)
+    response:
+      - response (Gemini SDK response object)
+    errors:
+      - 405 Method Not Allowed
+      - 503 No API key configured
+      - 500 Execution error
+
+  - path: /api/generate/image
+    method: POST
+    description: Plan image generation using Gemini AI
+    request_body:
+      - model (string)
+      - contents (array)
+    response:
+      - response (Gemini SDK response object)
+    errors:
+      - 405 Method Not Allowed
+      - 503 No API key configured
+      - 500 Execution error
+
+  - path: /api/generate
+    method: POST
+    description: Unified Gemini proxy for local development (Express)
+    request_body:
+      - model (string)
+      - contents (array)
+    response:
+      - result (Gemini SDK result object)
+
+  - path: /api/health
+    method: GET
+    description: Health check endpoint
+    response:
+      - ok (boolean)
+      - hasKey (boolean)
+
+key_files:
+  - path: src/App.tsx
+    purpose: Main application component (canvas, layers, generation logic)
+    lines: 1865
+  - path: src/hooks/useApiKey.ts
+    purpose: Hybrid authentication hook
+  - path: src/components/ApiKeyModal.tsx
+    purpose: API key settings modal UI
+  - path: src/constants.ts
+    purpose: AI model name constants
+  - path: api/generate/analysis.ts
+    purpose: Vercel serverless function for sketch analysis
+  - path: api/generate/image.ts
+    purpose: Vercel serverless function for image generation
+  - path: server/index.ts
+    purpose: Express.js local development server
+
+architecture:
+  data_flow:
+    - User draws sketch on canvas
+    - Canvas exported as base64 image
+    - Authentication check (BYOK vs Proxy)
+    - Step 1 - Sketch Analysis (OCR + spatial analysis)
+    - Step 2 - Plan Image Generation (CAD floor plan)
+    - Display result and save to library
+
+  state_management:
+    - Layer system with Shape/Transform interfaces
+    - Canvas history for undo/redo
+    - Real-time generation progress tracking
+    - Theme state management
+    - Result and generated image storage
+
+known_issues:
+  - Room position mismatches between input sketch and output (topology preservation)
+  - Visual style inconsistencies in generated floor plans

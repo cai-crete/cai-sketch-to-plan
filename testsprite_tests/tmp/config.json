@@ -1,0 +1,20 @@
+{
+  "status": "init",
+  "executionArgs": {
+    "projectName": "sketch-to-plan",
+    "projectPath": "d:\\OneDrive\\바탕 화면\\CRETE\\sketch-to-plan",
+    "testIds": [
+      "TC001"
+    ],
+    "additionalInstruction": "",
+    "serverMode": "production",
+    "envs": {
+      "API_KEY": "sk-user-HdtLBwfrXsgyJH9pK-j6GlXOuNNHxOxM9ruCOjI7HhDfpxf6r9s-trFq2910bxDjg8D7g9mXKMjpXNiR3LDxy0g7JJliI4LUdJdA5dqTZx0wFY5eok4azfipZsx5FPSRR9Q"
+    }
+  },
+  "scope": "codebase",
+  "type": "frontend",
+  "localEndpoint": "http://localhost:4173/",
+  "serverPort": 63170,
+  "proxy": "http://b4921270-d7a0-4268-80e3-e8f5db5fbb39:EOyxmx60ycvwO4LIkNk6OlcjtM1Gvll4@tun.testsprite.com:8080"
+}

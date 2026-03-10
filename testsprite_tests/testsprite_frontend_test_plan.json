@@ -1,0 +1,1210 @@
+[
+  {
+    "id": "TC001",
+    "title": "Draw a simple sketch using Pen tool and verify the mark is visible on the canvas",
+    "description": "Verifies a user can draw on the canvas using the Pen tool and the stroke remains visible.",
+    "category": "Sketch Input & Canvas",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application's home page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Canvas\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Pen\" tool"
+      },
+      {
+        "type": "action",
+        "description": "Click on the canvas to place a stroke point"
+      },
+      {
+        "type": "action",
+        "description": "Click on the canvas at a different location to extend the stroke"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Drawing on canvas\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Erase part of a drawing using Eraser tool",
+    "description": "Verifies the Eraser tool removes previously drawn content from the canvas.",
+    "category": "Sketch Input & Canvas",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application's home page"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Pen\" tool"
+      },
+      {
+        "type": "action",
+        "description": "Click on the canvas to place a visible stroke"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Eraser\" tool"
+      },
+      {
+        "type": "action",
+        "description": "Click on the previously drawn stroke area on the canvas"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Erased area on canvas\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Create a rectangle shape and verify it appears on the canvas",
+    "description": "Verifies the Rectangle tool creates a visible rectangular shape on the canvas.",
+    "category": "Sketch Input & Canvas",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application's home page"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Rectangle\" tool"
+      },
+      {
+        "type": "action",
+        "description": "Click on the canvas to set the rectangle start point"
+      },
+      {
+        "type": "action",
+        "description": "Click on the canvas at a different location to set the rectangle end point"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Rectangle shape on canvas\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Shape selected\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Add text annotation and verify the text is visible on the canvas",
+    "description": "Verifies the Text tool places a text annotation onto the canvas and it is readable.",
+    "category": "Sketch Input & Canvas",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application's home page"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Text\" tool"
+      },
+      {
+        "type": "action",
+        "description": "Click on the canvas where the text should be placed"
+      },
+      {
+        "type": "action",
+        "description": "Type \"Living Room\" into the text input"
+      },
+      {
+        "type": "action",
+        "description": "Press \"Enter\" key"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Living Room\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Move an existing shape using Move tool",
+    "description": "Verifies the Move tool can reposition an existing shape and the new position is reflected visually.",
+    "category": "Sketch Input & Canvas",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application's home page"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Rectangle\" tool"
+      },
+      {
+        "type": "action",
+        "description": "Click on the canvas to set the rectangle start point"
+      },
+      {
+        "type": "action",
+        "description": "Click on the canvas at a different location to set the rectangle end point"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Move\" tool"
+      },
+      {
+        "type": "action",
+        "description": "Click on the rectangle on the canvas to select it"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Selection handles\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Undo and Redo a drawing action",
+    "description": "Verifies undo removes the last action and redo restores it.",
+    "category": "Sketch Input & Canvas",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application's home page"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Pen\" tool"
+      },
+      {
+        "type": "action",
+        "description": "Click on the canvas to place a visible stroke"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Undo\" control"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Stroke removed\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Redo\" control"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Stroke present\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Toggle grid overlay on the canvas",
+    "description": "Verifies the grid overlay can be turned on and off and is visibly reflected on the canvas.",
+    "category": "Sketch Input & Canvas",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application's home page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Canvas\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Grid\" toggle"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Grid overlay\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Grid\" toggle"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Grid overlay\" is not visible"
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Layer visibility toggle hides and shows a layer’s content",
+    "description": "Verifies turning a layer off hides its content and turning it back on shows it again.",
+    "category": "Sketch Input & Canvas",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application's home page"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Pen\" tool"
+      },
+      {
+        "type": "action",
+        "description": "Click on the canvas to place a visible stroke"
+      },
+      {
+        "type": "action",
+        "description": "Click on the current layer's \"Visibility\" toggle to hide the layer"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Layer content hidden\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the current layer's \"Visibility\" toggle to show the layer"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Layer content visible\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Adjust layer opacity and verify the layer appears lighter/dimmer",
+    "description": "Verifies changing layer opacity affects the visible intensity of content on that layer.",
+    "category": "Sketch Input & Canvas",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application's home page"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Pen\" tool"
+      },
+      {
+        "type": "action",
+        "description": "Click on the canvas to place a visible stroke"
+      },
+      {
+        "type": "action",
+        "description": "Click on the layer \"Opacity\" control"
+      },
+      {
+        "type": "action",
+        "description": "Select \"50%\" from the opacity dropdown"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Layer appears semi-transparent\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Export current canvas sketch is available for AI processing entry point",
+    "description": "Verifies the UI provides an action to export the canvas as an image and indicates readiness for AI processing.",
+    "category": "Sketch Input & Canvas",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application's home page"
+      },
+      {
+        "type": "action",
+        "description": "Click on the \"Pen\" tool"
+      },
+      {
+        "type": "action",
+        "description": "Click on the canvas to place a visible stroke"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Generate\" or \"Analyze\" (AI processing) action"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Processing\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Sketch captured\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Run sketch analysis successfully (primary model)",
+    "description": "Verifies a user can run Step 1 sketch analysis and see a completed analysis result using the primary model.",
+    "category": "AI Analysis Pipeline (Sketch Analysis)",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application's home page."
+      },
+      {
+        "type": "action",
+        "description": "Click on the control to open the AI analysis (Step 1) panel."
+      },
+      {
+        "type": "action",
+        "description": "Click on the primary model option labeled \"gemini-2.5-pro\"."
+      },
+      {
+        "type": "action",
+        "description": "Click on the button labeled \"Analyze\" (or \"Run Analysis\")."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Analyzing\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Analysis complete\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Rooms\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Adjacency\" is visible."
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Analysis output includes expected sections (OCR, rooms, adjacency/structure)",
+    "description": "Verifies the analysis results screen presents OCR text, room list, and structural/adjacency information after analysis completes.",
+    "category": "AI Analysis Pipeline (Sketch Analysis)",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application's home page."
+      },
+      {
+        "type": "action",
+        "description": "Click on the control to open the AI analysis (Step 1) panel."
+      },
+      {
+        "type": "action",
+        "description": "Click on the button labeled \"Analyze\" (or \"Run Analysis\")."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Analysis complete\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"OCR\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Rooms\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Bounding\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Structural\" is visible."
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "User can manually choose fallback model and run analysis successfully",
+    "description": "Verifies a user can select the fallback model directly and complete analysis without using the primary model.",
+    "category": "AI Analysis Pipeline (Sketch Analysis)",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application's home page."
+      },
+      {
+        "type": "action",
+        "description": "Click on the control to open the AI analysis (Step 1) panel."
+      },
+      {
+        "type": "action",
+        "description": "Click on the model option labeled \"gemini-2.5\"."
+      },
+      {
+        "type": "action",
+        "description": "Click on the button labeled \"Analyze\" (or \"Run Analysis\")."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Analyzing\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Analysis complete\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Rooms\" is visible."
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Clear and re-run analysis updates the results",
+    "description": "Verifies a user can clear prior analysis results and run analysis again to regenerate a fresh output.",
+    "category": "AI Analysis Pipeline (Sketch Analysis)",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application's home page."
+      },
+      {
+        "type": "action",
+        "description": "Click on the control to open the AI analysis (Step 1) panel."
+      },
+      {
+        "type": "action",
+        "description": "Click on the button labeled \"Analyze\" (or \"Run Analysis\")."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Analysis complete\" is visible."
+      },
+      {
+        "type": "action",
+        "description": "Click on the button labeled \"Clear analysis\" (or \"Reset\")."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"No analysis yet\" is visible."
+      },
+      {
+        "type": "action",
+        "description": "Click on the button labeled \"Analyze\" (or \"Run Analysis\")."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Analysis complete\" is visible."
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Prevent running analysis while another analysis is in progress",
+    "description": "Verifies the UI blocks duplicate submissions during an ongoing analysis and indicates processing state.",
+    "category": "AI Analysis Pipeline (Sketch Analysis)",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application's home page."
+      },
+      {
+        "type": "action",
+        "description": "Click on the control to open the AI analysis (Step 1) panel."
+      },
+      {
+        "type": "action",
+        "description": "Click on the button labeled \"Analyze\" (or \"Run Analysis\")."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Analyzing\" is visible."
+      },
+      {
+        "type": "action",
+        "description": "Click on the button labeled \"Analyze\" (or \"Run Analysis\") again."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Analyzing\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Analyze\" button is visible."
+      }
+    ]
+  },
+  {
+    "id": "TC016",
+    "title": "Analysis result view supports scrolling through long output",
+    "description": "Verifies the user can scroll the analysis output area and still see key sections, indicating long results are usable.",
+    "category": "AI Analysis Pipeline (Sketch Analysis)",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application's home page."
+      },
+      {
+        "type": "action",
+        "description": "Click on the control to open the AI analysis (Step 1) panel."
+      },
+      {
+        "type": "action",
+        "description": "Click on the button labeled \"Analyze\" (or \"Run Analysis\")."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Analysis complete\" is visible."
+      },
+      {
+        "type": "action",
+        "description": "Scroll to the bottom of the analysis results area."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Structural\" is visible."
+      },
+      {
+        "type": "action",
+        "description": "Scroll to the top of the analysis results area."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"OCR\" is visible."
+      }
+    ]
+  },
+  {
+    "id": "TC017",
+    "title": "Generate CAD-style plan image successfully (primary model)",
+    "description": "Verifies a user can generate a CAD-style floor plan image and see the result rendered in the UI using the primary image model path.",
+    "category": "Plan Image Generation",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application's main page."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Canvas\" is visible."
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Generate\" (or \"Generate Plan Image\") to start image generation."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Generating\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Generated plan image\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Style\" is visible."
+      }
+    ]
+  },
+  {
+    "id": "TC018",
+    "title": "Prevent generation when required analysis input is missing",
+    "description": "Verifies the UI blocks Step 2 image generation if the structural analysis input is not available and provides guidance to the user.",
+    "category": "Plan Image Generation",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application's main page."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Canvas\" is visible."
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Generate Plan Image\" (Step 2) without having completed the analysis step."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Run analysis first\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Generated plan image\" is not visible."
+      }
+    ]
+  },
+  {
+    "id": "TC019",
+    "title": "Prevent generation when canvas/sketch input is missing",
+    "description": "Verifies the UI blocks Step 2 image generation when there is no sketch/canvas content and shows an informative message.",
+    "category": "Plan Image Generation",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application's main page."
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Clear canvas\" (or \"Reset\") to ensure the canvas is empty."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Canvas cleared\" is visible."
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Generate\" (or \"Generate Plan Image\")."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Add a sketch\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Generated plan image\" is not visible."
+      }
+    ]
+  },
+  {
+    "id": "TC020",
+    "title": "User can cancel image generation in progress",
+    "description": "Verifies a user can cancel an in-progress image generation job and the UI returns to an idle state without showing a new image.",
+    "category": "Plan Image Generation",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application's main page."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Canvas\" is visible."
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Generate\" (or \"Generate Plan Image\") to start image generation."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Generating\" is visible."
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Cancel\"."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Generating\" is not visible."
+      }
+    ]
+  },
+  {
+    "id": "TC021",
+    "title": "Generated image can be regenerated and updates the displayed result",
+    "description": "Verifies that running generation again replaces the prior generated plan image with a newly generated one (no stale state).",
+    "category": "Plan Image Generation",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application's main page."
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Generate\" (or \"Generate Plan Image\")."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Generated plan image\" is visible."
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Regenerate\" (or \"Generate again\")."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Generating\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Generated plan image\" is visible."
+      }
+    ]
+  },
+  {
+    "id": "TC022",
+    "title": "Style metadata is displayed alongside the generated plan image",
+    "description": "Verifies the UI surfaces returned style metadata (e.g., template/style name) when an image generation succeeds.",
+    "category": "Plan Image Generation",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application's main page."
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Generate\" (or \"Generate Plan Image\")."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Generated plan image\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Style\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Style metadata\" is visible."
+      }
+    ]
+  },
+  {
+    "id": "TC023",
+    "title": "BYOK: add a personal Gemini API key and verify it is saved in the UI",
+    "description": "Verifies a user can enter a personal Gemini API key via the UI and the app reflects that the key is configured.",
+    "category": "Hybrid Authentication (BYOK + Server Proxy)",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application's home page."
+      },
+      {
+        "type": "action",
+        "description": "Click on the UI control that opens the API key configuration (for example, 'API Key', 'Settings', or 'Configure key')."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"API key\" is visible."
+      },
+      {
+        "type": "action",
+        "description": "Type \"AIzaSyDUMMY_PERSONAL_KEY_1234567890\" into the personal API key input field."
+      },
+      {
+        "type": "action",
+        "description": "Click on the button to save or apply the API key."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text indicating the API key is configured (for example, \"Key saved\", \"Personal key enabled\", or \"Using personal key\") is visible."
+      }
+    ]
+  },
+  {
+    "id": "TC024",
+    "title": "BYOK: remove personal API key and verify it is cleared in the UI",
+    "description": "Verifies a user can remove a previously saved personal API key and the app reflects that no personal key is configured.",
+    "category": "Hybrid Authentication (BYOK + Server Proxy)",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application's home page."
+      },
+      {
+        "type": "action",
+        "description": "Click on the UI control that opens the API key configuration (for example, 'API Key', 'Settings', or 'Configure key')."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"API key\" is visible."
+      },
+      {
+        "type": "action",
+        "description": "Click on the button to remove, clear, or disable the personal API key."
+      },
+      {
+        "type": "action",
+        "description": "Click on the confirmation button (if a confirmation dialog or inline confirmation is shown)."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text indicating no API key is configured (for example, \"No personal key\", \"Key not set\", or \"Add your API key\") is visible."
+      }
+    ]
+  },
+  {
+    "id": "TC025",
+    "title": "Validation: prevent saving an empty personal API key",
+    "description": "Verifies the UI blocks saving when the personal API key input is empty and shows a validation message.",
+    "category": "Hybrid Authentication (BYOK + Server Proxy)",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application's home page."
+      },
+      {
+        "type": "action",
+        "description": "Click on the UI control that opens the API key configuration (for example, 'API Key', 'Settings', or 'Configure key')."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"API key\" is visible."
+      },
+      {
+        "type": "action",
+        "description": "Type \"\" into the personal API key input field."
+      },
+      {
+        "type": "action",
+        "description": "Click on the button to save or apply the API key."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text indicating the key is required (for example, \"API key is required\" or \"Please enter an API key\") is visible."
+      }
+    ]
+  },
+  {
+    "id": "TC026",
+    "title": "Validation: reject an obviously invalid API key format",
+    "description": "Verifies the UI handles a clearly invalid key entry and displays an error without enabling successful configuration.",
+    "category": "Hybrid Authentication (BYOK + Server Proxy)",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application's home page."
+      },
+      {
+        "type": "action",
+        "description": "Click on the UI control that opens the API key configuration (for example, 'API Key', 'Settings', or 'Configure key')."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"API key\" is visible."
+      },
+      {
+        "type": "action",
+        "description": "Type \"not-a-real-key\" into the personal API key input field."
+      },
+      {
+        "type": "action",
+        "description": "Click on the button to save or apply the API key."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text indicating the key is invalid (for example, \"Invalid API key\" or \"Key format not recognized\") is visible."
+      }
+    ]
+  },
+  {
+    "id": "TC027",
+    "title": "Health check shows server key available and UI indicates proxy mode is available",
+    "description": "Verifies the app can load and visibly indicates that a server-side Gemini key is available (proxy mode available).",
+    "category": "Health Check & Key Detection",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application home page."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Server key\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"available\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Proxy\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"mode\" is visible."
+      }
+    ]
+  },
+  {
+    "id": "TC028",
+    "title": "Health check shows no server key and UI prompts user to provide their own key (BYOK)",
+    "description": "Verifies the app visibly prompts for a user-provided key when the server key is not configured (fallback flow).",
+    "category": "Health Check & Key Detection",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application home page."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"API key\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Add\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"your own key\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"BYOK\" is visible."
+      }
+    ]
+  },
+  {
+    "id": "TC029",
+    "title": "App remains usable when health check status indicator is present (server key available case)",
+    "description": "Verifies that when a healthy status is shown, the primary call-to-action for creating a plan is still visible.",
+    "category": "Health Check & Key Detection",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application home page."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Healthy\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Start\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Canvas\" is visible."
+      }
+    ]
+  },
+  {
+    "id": "TC030",
+    "title": "App remains usable when BYOK prompt is present (no server key case)",
+    "description": "Verifies that even when prompting for a key, the UI still shows a clear next step to continue or configure the key.",
+    "category": "Health Check & Key Detection",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application home page."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"No server key\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Enter API key\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Continue\" is visible."
+      }
+    ]
+  },
+  {
+    "id": "TC031",
+    "title": "Health check failure shows a visible, user-friendly service status message",
+    "description": "Verifies the UI shows a visible service-unavailable or retry message when it cannot determine health/key state.",
+    "category": "Health Check & Key Detection",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application home page."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Unable to check service status\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Retry\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Try again\" is visible."
+      }
+    ]
+  },
+  {
+    "id": "TC032",
+    "title": "Retry after health check failure updates the visible status (recovery)",
+    "description": "Verifies that using a visible Retry control updates the health/key detection state shown on the page.",
+    "category": "Health Check & Key Detection",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application home page."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Retry\" is visible."
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Retry\"."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Healthy\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"API key\" is visible."
+      }
+    ]
+  },
+  {
+    "id": "TC033",
+    "title": "View Library list with saved floor plans and timestamps",
+    "description": "Verifies the in-app library displays saved generated floor plans with visible timestamps.",
+    "category": "Library & Result Display",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the Library page using the app’s main navigation (Library)."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify page title contains \"Library\"."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Saved floor plans list\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"At least one library item card\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Timestamp on a library item\" is visible."
+      },
+      {
+        "type": "action",
+        "description": "Scroll to the bottom of the library list."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"At least one library item card\" is visible."
+      }
+    ]
+  },
+  {
+    "id": "TC034",
+    "title": "Open a library item and see generated image plus analysis metadata",
+    "description": "Verifies a saved library item can be opened and shows the generated image along with analysis metadata (rooms/structure).",
+    "category": "Library & Result Display",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the Library page using the app’s main navigation (Library)."
+      },
+      {
+        "type": "action",
+        "description": "Click on the first library item card."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Generated floor plan image preview\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Analysis\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Rooms\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Structure\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Timestamp\" is visible."
+      }
+    ]
+  },
+  {
+    "id": "TC035",
+    "title": "Verify newest saved result appears first (timestamp order)",
+    "description": "Verifies the library displays items in reverse-chronological order based on timestamps.",
+    "category": "Library & Result Display",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the Library page using the app’s main navigation (Library)."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"First library item timestamp\" is visible."
+      },
+      {
+        "type": "action",
+        "description": "Click on the first library item card."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Timestamp\" is visible."
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Back to Library\" (or the Library breadcrumb) to return to the library list."
+      },
+      {
+        "type": "action",
+        "description": "Click on the second library item card."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Timestamp\" is visible."
+      }
+    ]
+  },
+  {
+    "id": "TC036",
+    "title": "Result display shows export options for a library item",
+    "description": "Verifies export options are visible for a selected library item in the result display.",
+    "category": "Library & Result Display",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the Library page using the app’s main navigation (Library)."
+      },
+      {
+        "type": "action",
+        "description": "Click on the first library item card."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Export\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Export options section\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Generated floor plan image preview\" is visible."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Analysis\" is visible."
+      }
+    ]
+  }
+]

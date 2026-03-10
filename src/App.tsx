@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sun, Moon, PenTool, Eraser, Trash2, Download, RefreshCw, CheckCircle2, Plus, Eye, EyeOff, Image as ImageIcon, Move, Crosshair, Square, Type, ChevronLeft, ChevronRight, X, Pen, Undo2, Check } from 'lucide-react';
-import { GoogleGenAI } from '@google/genai';
+import { Sun, Moon, PenTool, Eraser, Trash2, Download, RefreshCw, CheckCircle2, Plus, Eye, EyeOff, Image as ImageIcon, Move, Crosshair, Square, Type, ChevronLeft, ChevronRight, X, Pen, Undo2, Check, Settings } from 'lucide-react';
 import { SKETCH_ANALYSIS, PLAN_IMAGE_GEN, SKETCH_ANALYSIS_FALLBACK, PLAN_IMAGE_GEN_FALLBACK } from './constants';
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+import { useApiKey } from './hooks/useApiKey';
+import ApiKeyModal from './components/ApiKeyModal';
 
 interface Shape {
   id: string;
@@ -107,6 +106,8 @@ const removeExteriorWhite = async (dataUrl: string): Promise<string> => {
 };
 
 export default function App() {
+  const { generateContent, saveKey, personalKey, authMode } = useApiKey();
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [textPrompt, setTextPrompt] = useState('');
 
@@ -975,13 +976,13 @@ Return the structural analysis, rectified logic, Micro-Report Form, and RESULT P
 
       let analysisResponse;
       try {
-        analysisResponse = await ai.models.generateContent({
+        analysisResponse = await generateContent({
           model: SKETCH_ANALYSIS,
           contents: { parts: [{ text: analysisPrompt }, { inlineData: { data: base64Image, mimeType: 'image/jpeg' } }] }
         });
       } catch (error) {
         console.warn('Sketch Analysis Primary model failed, trying fallback:', error);
-        analysisResponse = await ai.models.generateContent({
+        analysisResponse = await generateContent({
           model: SKETCH_ANALYSIS_FALLBACK,
           contents: { parts: [{ text: analysisPrompt }, { inlineData: { data: base64Image, mimeType: 'image/jpeg' } }] }
         });
@@ -1013,13 +1014,13 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
 
       let response;
       try {
-        response = await ai.models.generateContent({
+        response = await generateContent({
           model: PLAN_IMAGE_GEN,
           contents: { parts: generationParts }
         });
       } catch (error) {
         console.warn('Plan Generation Primary model failed, trying fallback:', error);
-        response = await ai.models.generateContent({
+        response = await generateContent({
           model: PLAN_IMAGE_GEN_FALLBACK,
           contents: { parts: generationParts }
         });
@@ -1092,6 +1093,14 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
             LIBRARY
           </button>
           <button
+            onClick={() => setShowApiKeyModal(true)}
+            disabled={isGenerating}
+            className={`hover:opacity-60 transition-opacity ${isGenerating ? 'pointer-events-none opacity-50' : ''}`}
+            title={`API Key (${authMode === 'byok' ? 'BYOK' : 'Proxy'})`}
+          >
+            <Settings size={20} strokeWidth={authMode === 'byok' ? 2 : 1.25} />
+          </button>
+          <button
             onClick={toggleTheme}
             disabled={isGenerating}
             className={`hover:opacity-60 transition-opacity ${isGenerating ? 'pointer-events-none opacity-50' : ''}`}
@@ -1105,6 +1114,14 @@ Generate a professional, minimalist, black and white 2D top-down CAD floor plan.
       <main className="flex-1 flex flex-col landscape:flex-row overflow-hidden relative">
 
         {/* [라이브러리 오버레이 모드 z-60] */}
+        <ApiKeyModal
+          isOpen={showApiKeyModal}
+          onClose={() => setShowApiKeyModal(false)}
+          currentKey={personalKey}
+          authMode={authMode}
+          onSave={saveKey}
+        />
+
         {showLibrary && (
           <div className="absolute inset-0 z-[60] bg-bw-white dark:bg-bw-black flex flex-col">
             <div className="flex items-center justify-between px-6 pt-6 shrink-0">
